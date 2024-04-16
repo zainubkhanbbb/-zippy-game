@@ -1,0 +1,128 @@
+// Initialize canvas and context
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game variables
+let player = {
+    x: 50,
+    y: canvas.height - 50,
+    width: 50,
+    height: 50,
+    jumping: false,
+    jumpCount: 10,
+    velocityY: 0,
+    gravity: 0.5
+};
+let objects = [];
+let objectSpeed = 2;
+let spawnRate = 100;
+let score = 0;
+let highScore = 0;
+let level = 1;
+const maxLevel = 5;
+
+// Function to spawn objects
+function spawnObject() {
+    let x = canvas.width;
+    let y = canvas.height - 50;
+    objects.push({ x, y, width: 20, height: 20 });
+}
+
+// Function to handle player jump
+function jump() {
+    if (!player.jumping) {
+        player.jumping = true;
+        player.velocityY = -10;
+    }
+}
+
+// Function to update game state
+function update() {
+    // Update player position
+    player.y += player.velocityY;
+    player.velocityY += player.gravity;
+
+    // Check if player is on the ground
+    if (player.y + player.height >= canvas.height) {
+        player.y = canvas.height - player.height;
+        player.jumping = false;
+    }
+
+    // Spawn objects
+    if (Math.random() < 1 / spawnRate) {
+        spawnObject();
+    }
+
+    // Move objects
+    for (let obj of objects) {
+        obj.x -= objectSpeed;
+    }
+
+    // Remove objects that are out of the screen
+    objects = objects.filter(obj => obj.x + obj.width > 0);
+
+    // Check for collision with objects
+    for (let obj of objects) {
+        if (
+            player.x < obj.x + obj.width &&
+            player.x + player.width > obj.x &&
+            player.y < obj.y + obj.height &&
+            player.y + player.height > obj.y
+        ) {
+            if (score > highScore) {
+                highScore = score;
+            }
+            score = 0;
+            level = 1;
+            objects = [];
+        }
+    }
+
+    // Increase score and level
+    score++;
+    if (score % 100 === 0 && level < maxLevel) {
+        level++;
+        objectSpeed += 1;
+        spawnRate -= 5;
+        if (spawnRate < 20) {
+            spawnRate = 20;
+        }
+    }
+}
+
+// Function to draw everything
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw player
+    ctx.fillStyle = 'black';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Draw objects
+    ctx.fillStyle = 'red';
+    for (let obj of objects) {
+        ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+    }
+
+    // Draw scores and level
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.fillText(`Score: ${score}`, 10, 30);
+    ctx.fillText(`High Score: ${highScore}`, 10, 60);
+    ctx.fillText(`Level: ${level}`, 10, 90);
+}
+
+// Game loop
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+gameLoop();
+
+// Event listener for jumping
+document.addEventListener('keydown', event => {
+    if (event.code === 'Space') {
+        jump();
+    }
+});
